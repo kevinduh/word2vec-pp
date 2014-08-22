@@ -1,0 +1,11 @@
+== compute-accuracy results ==
+
+
+./demo-word-accuracy.sh (text8)
+Total accuracy: 27.64 %   Semantic accuracy: 27.00 %   Syntactic accuracy: 27.96 %
+Questions seen / total: 12268 19544   62.77 %
+
+
+./compute-accuracy GoogleNews-vectors-negative300.bin 30000 < questions-words.txt
+Total accuracy: 76.77 %   Semantic accuracy: 78.06 %   Syntactic accuracy: 76.06 %
+Questions seen / total: 13190 19544   67.49 %
