@@ -13,13 +13,27 @@
 //  limitations under the License.
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
 
 const long long max_size = 2000;         // max length of strings
-const long long N = 40;                  // number of closest words that will be shown
+long long N = 40;                  // number of closest words that will be shown
 const long long max_w = 50;              // max length of vocabulary entries
+
+int binary = 0;
+int ArgPos(char *str, int argc, char **argv) {
+  int a;
+  for (a = 1; a < argc; a++) if (!strcmp(str, argv[a])) {
+    if (a == argc - 1) {
+      printf("Argument missing for %s\n", str);
+      exit(1);
+    }
+    return a;
+  }
+  return -1;
+}
 
 int main(int argc, char **argv) {
   FILE *f;
@@ -32,10 +46,18 @@ int main(int argc, char **argv) {
   float *M;
   char *vocab;
   if (argc < 2) {
-    printf("Usage: ./distance <FILE>\nwhere FILE contains word projections in the BINARY FORMAT\n");
+    printf("Usage: ./distance <FILE> \t where FILE contains word projections \n");
+    printf("Options:\n");
+    printf("\t-binary <int>\n\t\tRead the vector file in binary mode (1) or not (default:0)\n");
+    printf("\t-N <int>\n\t\tNumber of closest words to list\n");
     return 0;
   }
   strcpy(file_name, argv[1]);
+
+  int i;
+  if ((i = ArgPos((char *)"-binary", argc, argv)) > 0) binary = atoi(argv[i + 1]);
+  if ((i = ArgPos((char *)"-N", argc, argv)) > 0) N = atoi(argv[i + 1]);
+  
   f = fopen(file_name, "rb");
   if (f == NULL) {
     printf("Input file not found\n");
@@ -52,7 +74,12 @@ int main(int argc, char **argv) {
   }
   for (b = 0; b < words; b++) {
     fscanf(f, "%s%c", &vocab[b * max_w], &ch);
-    for (a = 0; a < size; a++) fread(&M[a + b * size], sizeof(float), 1, f);
+    if (binary){
+      for (a = 0; a < size; a++) fread(&M[a + b * size], sizeof(float), 1, f);
+    }
+    else {
+      for (a = 0; a < size; a++) fscanf(f,"%f",&M[a + b * size]);
+    }
     len = 0;
     for (a = 0; a < size; a++) len += M[a + b * size] * M[a + b * size];
     len = sqrt(len);
