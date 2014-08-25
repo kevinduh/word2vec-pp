@@ -44,6 +44,7 @@ long long train_words = 0, word_count_actual = 0, file_size = 0, classes = 0;
 real alpha = 0.025, starting_alpha, sample = 0;
 real *syn0, *syn1, *syn1neg, *expTable;
 clock_t start;
+float init_scale = 1.0, init_offset = 0.0;
 
 int hs = 1, negative = 0;
 const int table_size = 1e8;
@@ -354,6 +355,34 @@ void InitNet() {
   for (b = 0; b < layer1_size; b++) for (a = 0; a < vocab_size; a++)
    syn0[a * layer1_size + b] = (rand() / (real)RAND_MAX - 0.5) / layer1_size;
   CreateBinaryTree();
+
+  if (initvec_file[0] != 0){
+    FILE *f;
+    f = fopen(initvec_file, "rb");
+    if (f == NULL){
+      printf("Initvec file not found\n");
+      exit(1);
+    }
+    long long words_init, size_init, this_word_id;
+    char this_word[MAX_STRING];
+    float *M;
+    fscanf(f, "%lld", &words_init);
+    fscanf(f, "%lld", &size_init);
+    M = (float *)malloc((long long)size_init * sizeof(float));
+    long long minsize = size_init < layer1_size ? size_init : layer1_size;
+
+    for (b = 0; b < words_init; ++b) {
+      fscanf(f, "%s", this_word);
+      for (a = 0; a < size_init; ++a) fscanf(f,"%f",&M[a]);
+      this_word_id=SearchVocab(this_word);
+      if (this_word_id != -1){
+
+	for (a = 0; a < minsize; ++a) syn0[this_word_id*layer1_size + a] = (M[a]-init_offset)/init_scale;
+      }
+    }
+    fclose(f);
+    free(M);
+  }
 }
 
 void *TrainModelThread(void *id) {
@@ -647,8 +676,13 @@ int main(int argc, char **argv) {
     printf("\t\tThe vocabulary will be read from <file>, not constructed from the training data\n");
     printf("\t-cbow <int>\n");
     printf("\t\tUse the continuous bag of words model; default is 0 (skip-gram model)\n");
+    printf("\nParameters for Initializing by Seed Vectors\n");
     printf("\t-initvec <file>\n");
-    printf("\t\tFile for initializing word vectors (in word2vec ascii format)\n");
+    printf("\t\tFile for initializing word vectors (must be in word2vec ascii format!)\n");
+    printf("\t-initscale <float>\n");
+    printf("\t\tScaling factor for initvec: (vec[i]-b)/s (default s=1.0)\n");
+    printf("\t-initoffset <float>\n");
+    printf("\t\tScaling factor for initvec: (vec[i]-b)/s (default b=0.0)\n");
     printf("\nExamples:\n");
     printf("./word2vec -train data.txt -output vec.txt -debug 2 -size 200 -window 5 -sample 1e-4 -negative 5 -hs 0 -binary 0 -cbow 1\n\n");
     return 0;
@@ -673,6 +707,8 @@ int main(int argc, char **argv) {
   if ((i = ArgPos((char *)"-min-count", argc, argv)) > 0) min_count = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-classes", argc, argv)) > 0) classes = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-initvec", argc, argv)) > 0) strcpy(initvec_file, argv[i + 1]);
+  if ((i = ArgPos((char *)"-initscale", argc, argv)) > 0) init_scale = atof(argv[i + 1]);
+  if ((i = ArgPos((char *)"-initoffset", argc, argv)) > 0) init_offset = atof(argv[i + 1]);
   vocab = (struct vocab_word *)calloc(vocab_max_size, sizeof(struct vocab_word));
   vocab_hash = (int *)calloc(vocab_hash_size, sizeof(int));
   expTable = (real *)malloc((EXP_TABLE_SIZE + 1) * sizeof(real));

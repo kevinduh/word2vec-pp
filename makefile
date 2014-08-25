@@ -15,6 +15,8 @@ word-analogy : word-analogy.c
 compute-accuracy : compute-accuracy.c
 	$(CC) compute-accuracy.c -o compute-accuracy $(CFLAGS)
 	chmod +x *.sh
+debug : word2vec.c
+	$(CC) word2vec.c -o word2vec.debug  -lm -pthread -march=native -Wall -Wno-unused-result -g
 
 clean:
 	rm -rf word2vec word2phrase distance word-analogy compute-accuracy
