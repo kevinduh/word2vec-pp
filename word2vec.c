@@ -371,15 +371,21 @@ void InitNet() {
     M = (float *)malloc((long long)size_init * sizeof(float));
     long long minsize = size_init < layer1_size ? size_init : layer1_size;
 
+    unsigned init_count = 0;
     for (b = 0; b < words_init; ++b) {
       fscanf(f, "%s", this_word);
       for (a = 0; a < size_init; ++a) fscanf(f,"%f",&M[a]);
       this_word_id=SearchVocab(this_word);
       if (this_word_id != -1){
-
 	for (a = 0; a < minsize; ++a) syn0[this_word_id*layer1_size + a] = (M[a]-init_offset)/init_scale;
+	init_count++;
       }
     }
+
+    printf("Initialize %d of %lld seed vectors from %s:\n", init_count, words_init, initvec_file);
+    printf("  Original size=%lld, new size=%lld (truncated or padded if necessary)\n" , size_init, minsize);
+    printf("  Scaling by (vec[i]-%f)/%f \n",init_offset,init_scale);
+    fflush(stdout);
     fclose(f);
     free(M);
   }
